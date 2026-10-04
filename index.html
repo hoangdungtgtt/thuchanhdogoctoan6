@@ -1,0 +1,724 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Luyện đo góc bằng thước đo góc</title>
+<style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+        font-family: 'Segoe UI', Tahoma, sans-serif;
+        background: linear-gradient(135deg, #2c3e50 0%, #4ca1af 100%);
+        min-height: 100vh;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        padding: 15px;
+    }
+
+    .container {
+        background: #fff;
+        border-radius: 20px;
+        box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        padding: 22px;
+        max-width: 950px;
+        width: 100%;
+    }
+
+    h1 {
+        text-align: center;
+        color: #2c3e50;
+        font-size: 22px;
+        margin-bottom: 6px;
+    }
+
+    .subtitle {
+        text-align: center;
+        color: #7f8c8d;
+        font-size: 13px;
+        margin-bottom: 15px;
+    }
+
+    .student-form {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+        margin-bottom: 15px;
+        padding: 12px;
+        background: #f0f4ff;
+        border-radius: 12px;
+        border-left: 4px solid #667eea;
+    }
+
+    .form-group { display: flex; flex-direction: column; }
+
+    .form-group label {
+        font-size: 12px;
+        font-weight: 600;
+        color: #555;
+        margin-bottom: 4px;
+    }
+
+    .form-group input {
+        padding: 8px 12px;
+        border: 2px solid #ddd;
+        border-radius: 8px;
+        font-size: 14px;
+        font-family: inherit;
+        transition: border 0.2s;
+    }
+
+    .form-group input:focus {
+        outline: none;
+        border-color: #667eea;
+    }
+
+    .canvas-wrapper {
+        position: relative;
+        display: flex;
+        justify-content: center;
+        margin-bottom: 15px;
+    }
+
+    canvas {
+        border: 2px solid #ddd;
+        border-radius: 10px;
+        background: #fdfdfd;
+        touch-action: none;
+        max-width: 100%;
+        height: auto;
+        cursor: default;
+    }
+
+    .toolbar {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        justify-content: center;
+        margin-bottom: 15px;
+    }
+
+    button {
+        padding: 10px 16px;
+        border: none;
+        border-radius: 50px;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+        color: #fff;
+    }
+
+    button:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 6px 15px rgba(0,0,0,0.2); }
+    button:disabled { opacity: 0.5; cursor: not-allowed; }
+    button:active:not(:disabled) { transform: translateY(0); }
+
+    .btn-new      { background: linear-gradient(135deg,#667eea,#764ba2); }
+    .btn-check    { background: linear-gradient(135deg,#11998e,#38ef7d); }
+    .btn-submit   { background: linear-gradient(135deg,#f093fb,#f5576c); }
+    .btn-rotate-l { background: linear-gradient(135deg,#4facfe,#00f2fe); }
+    .btn-rotate-r { background: linear-gradient(135deg,#43e97b,#38f9d7); }
+
+    .answer-area {
+        display: grid;
+        grid-template-columns: 1fr auto auto;
+        gap: 10px;
+        align-items: end;
+        padding: 15px;
+        background: #fff8e1;
+        border-radius: 12px;
+        border-left: 4px solid #ffb300;
+        margin-bottom: 12px;
+    }
+
+    .answer-area .form-group { margin-bottom: 0; }
+
+    .answer-area input {
+        font-size: 18px;
+        font-weight: bold;
+        color: #e65100;
+        text-align: center;
+    }
+
+    .result-box {
+        padding: 14px 18px;
+        border-radius: 12px;
+        font-weight: 600;
+        text-align: center;
+        font-size: 15px;
+        margin-bottom: 12px;
+        display: none;
+        animation: slideIn 0.3s;
+    }
+
+    @keyframes slideIn {
+        from { opacity: 0; transform: translateY(-10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    .result-correct { background:#d4edda; color:#155724; border:2px solid #28a745; }
+    .result-wrong   { background:#f8d7da; color:#721c24; border:2px solid #dc3545; }
+    .result-info    { background:#d1ecf1; color:#0c5460; border:2px solid #17a2b8; }
+
+    .stats {
+        display: flex;
+        justify-content: center;
+        gap: 15px;
+        flex-wrap: wrap;
+        padding: 10px;
+        background: #f8f9fa;
+        border-radius: 10px;
+        margin-bottom: 12px;
+        font-size: 13px;
+        color: #555;
+    }
+
+    .stats span { font-weight: 700; color: #667eea; font-size: 15px; }
+
+    .hint {
+        background: #e8f5e9;
+        border-left: 4px solid #4caf50;
+        padding: 10px 14px;
+        border-radius: 8px;
+        font-size: 12.5px;
+        color: #2e7d32;
+        line-height: 1.5;
+    }
+
+    @media (max-width: 600px) {
+        .student-form { grid-template-columns: 1fr; }
+        .answer-area { grid-template-columns: 1fr; }
+        h1 { font-size: 18px; }
+    }
+</style>
+</head>
+<body>
+<div class="container">
+    <h1>📐 Luyện đo góc bằng thước đo góc</h1>
+    <p class="subtitle">Xoay &amp; di chuyển thước đến góc xOy để đo • Điền kết quả và kiểm tra</p>
+
+    <div class="student-form">
+        <div class="form-group">
+            <label>👤 Họ và tên học sinh</label>
+            <input type="text" id="studentName" placeholder="Nhập họ và tên..." />
+        </div>
+        <div class="form-group">
+            <label>🏫 Lớp</label>
+            <input type="text" id="studentClass" placeholder="Ví dụ: 6A1" />
+        </div>
+    </div>
+
+    <div class="canvas-wrapper">
+        <canvas id="canvas" width="900" height="540"></canvas>
+    </div>
+
+    <div class="toolbar">
+        <button class="btn-rotate-l" onclick="rotateProtractor(-1)">↺ -1°</button>
+        <button class="btn-rotate-l" onclick="rotateProtractor(-5)">↺ -5°</button>
+        <button class="btn-rotate-r" onclick="rotateProtractor(5)">↻ +5°</button>
+        <button class="btn-rotate-r" onclick="rotateProtractor(1)">↻ +1°</button>
+        <button class="btn-new" onclick="newAngle()">🎲 Tạo góc mới</button>
+    </div>
+
+    <div class="answer-area">
+        <div class="form-group">
+            <label>✏️ Kết quả đo được (đơn vị: độ)</label>
+            <input type="number" id="answerInput" placeholder="VD: 45" min="0" max="180" step="1" />
+        </div>
+        <button class="btn-check" onclick="checkAnswer()">✓ Kiểm tra</button>
+        <button class="btn-submit" id="submitBtn" onclick="submitResult()" disabled>📤 Gửi kết quả</button>
+    </div>
+
+    <div class="result-box" id="resultBox"></div>
+
+    <div class="stats">
+        <div>Số lần đo: <span id="attemptCount">0</span></div>
+        <div>Đo đúng: <span id="correctCount">0</span></div>
+        <div>Trạng thái: <span id="statusText">Chưa đo</span></div>
+    </div>
+
+    <div class="hint">
+        <strong>💡 Hướng dẫn:</strong>
+        1️⃣ <b>Xoay nút cam</b> (nằm NGOÀI thân thước, phía trên đỉnh) để xoay thước cho khớp với tia Ox.<br>
+        2️⃣ <b>Kéo thân thước vàng</b> đến đỉnh O sao cho tâm thước trùng đỉnh O và đường kính thước trùng tia Ox.<br>
+        3️⃣ Đọc số đo tại vị trí tia Oy cắt vạch chia độ.
+    </div>
+</div>
+
+<script>
+const canvas = document.getElementById('canvas');
+const ctx = document.getElementById('canvas').getContext('2d');
+
+const API_URL = 'https://script.google.com/macros/s/AKfycbwyGc54RJg2FH5c8tStZpkD9Wux3gLpr4XaXCn8mCvBoRTj4bETqr2ZHOqYCq1gqHncvA/exec';
+
+// ===== GÓC xOy =====
+let angleXOY = 0;
+let O = { x: 450, y: 260 };
+let oxDirection = 0;
+let armLength = 170;
+
+// ===== THƯỚC ĐO GÓC =====
+let protractor = {
+    cx: 180,
+    cy: 420,
+    angle: 0,
+    radius: 130,
+    visible: true
+};
+
+// ===== KÍCH THƯỚC NÚT XOAY (đặt NGOÀI thân thước) =====
+const ROTATE_KNOB_OFFSET = 28;   // khoảng cách từ đỉnh thước ra ngoài
+const ROTATE_KNOB_RADIUS = 13;   // bán kính nút xoay
+
+let dragging = null;
+let dragOffset = { x: 0, y: 0 };
+let hoverTarget = null;
+
+let attemptCount = 0;
+let correctCount = 0;
+
+// ===== TẠO GÓC MỚI =====
+function newAngle() {
+    const minDeg = 4;
+    const maxDeg = 32;
+    angleXOY = (Math.floor(Math.random() * (maxDeg - minDeg + 1)) + minDeg) * 5;
+
+    const oxCandidates = [-75, -60, -45, -30, -15, 15, 30, 45, 60, 75];
+    oxDirection = oxCandidates[Math.floor(Math.random() * oxCandidates.length)];
+
+    protractor.cx = 180;
+    protractor.cy = 420;
+    const rotCandidates = [-70, -50, -35, -20, 20, 35, 50, 70, 110, 130, 160, -110, -130, -160];
+    protractor.angle = rotCandidates[Math.floor(Math.random() * rotCandidates.length)];
+
+    document.getElementById('answerInput').value = '';
+    document.getElementById('resultBox').style.display = 'none';
+
+    draw();
+}
+
+// ===== VẼ =====
+function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    drawGrid();
+    drawAngle();
+    if (protractor.visible) drawProtractor();
+}
+
+function drawGrid() {
+    ctx.strokeStyle = '#eef0f4';
+    ctx.lineWidth = 1;
+    for (let x = 0; x < canvas.width; x += 40) {
+        ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, canvas.height); ctx.stroke();
+    }
+    for (let y = 0; y < canvas.height; y += 40) {
+        ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(canvas.width, y); ctx.stroke();
+    }
+}
+
+function toVector(directionDeg, offsetDeg) {
+    const rad = (directionDeg + offsetDeg) * Math.PI / 180;
+    return { x: Math.cos(rad), y: -Math.sin(rad) };
+}
+
+function drawAngle() {
+    const vx = toVector(oxDirection, 0);
+    const xEnd = { x: O.x + vx.x * armLength, y: O.y + vx.y * armLength };
+
+    const vy = toVector(oxDirection, angleXOY);
+    const yEnd = { x: O.x + vy.x * armLength, y: O.y + vy.y * armLength };
+
+    const startRad = -oxDirection * Math.PI / 180;
+    const endRad = -(oxDirection + angleXOY) * Math.PI / 180;
+    ctx.beginPath();
+    ctx.arc(O.x, O.y, 50, startRad, endRad, true);
+    ctx.strokeStyle = 'rgba(231, 76, 60, 0.5)';
+    ctx.lineWidth = 2;
+    ctx.setLineDash([5, 3]);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    ctx.beginPath();
+    ctx.moveTo(O.x, O.y);
+    ctx.lineTo(xEnd.x, xEnd.y);
+    ctx.strokeStyle = '#2c3e50';
+    ctx.lineWidth = 3;
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(O.x, O.y);
+    ctx.lineTo(yEnd.x, yEnd.y);
+    ctx.strokeStyle = '#2c3e50';
+    ctx.lineWidth = 3;
+    ctx.stroke();
+
+    drawArrow(O, xEnd);
+    drawArrow(O, yEnd);
+
+    ctx.beginPath();
+    ctx.arc(O.x, O.y, 6, 0, Math.PI * 2);
+    ctx.fillStyle = '#e74c3c';
+    ctx.fill();
+    ctx.strokeStyle = '#fff';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    ctx.font = 'bold 22px Arial';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    ctx.fillStyle = '#e74c3c';
+    ctx.fillText('O', O.x - 22 * (vx.x + vy.x) / 2 - 15, O.y - 22 * (vx.y + vy.y) / 2 + 15);
+
+    ctx.fillStyle = '#e74c3c';
+    ctx.fillText('x', xEnd.x + vx.x * 22, xEnd.y + vx.y * 22);
+
+    ctx.fillStyle = '#3498db';
+    ctx.fillText('y', yEnd.x + vy.x * 22, yEnd.y + vy.y * 22);
+}
+
+function drawArrow(from, to) {
+    const angle = Math.atan2(to.y - from.y, to.x - from.x);
+    const len = 12;
+    ctx.beginPath();
+    ctx.moveTo(to.x, to.y);
+    ctx.lineTo(to.x - len * Math.cos(angle - 0.4), to.y - len * Math.sin(angle - 0.4));
+    ctx.lineTo(to.x - len * Math.cos(angle + 0.4), to.y - len * Math.sin(angle + 0.4));
+    ctx.closePath();
+    ctx.fillStyle = '#2c3e50';
+    ctx.fill();
+}
+
+// ===== VẼ THƯỚC ĐO GÓC =====
+function drawProtractor() {
+    const { cx, cy, angle, radius } = protractor;
+    const rad = angle * Math.PI / 180;
+
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.rotate(rad);
+
+    // Thân thước bán nguyệt
+    ctx.beginPath();
+    ctx.arc(0, 0, radius, Math.PI, 2 * Math.PI);
+    ctx.closePath();
+    ctx.fillStyle = 'rgba(255, 235, 130, 0.55)';
+    ctx.fill();
+    ctx.strokeStyle = '#d4a017';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    // Đường kính đáy
+    ctx.beginPath();
+    ctx.moveTo(-radius, 0);
+    ctx.lineTo(radius, 0);
+    ctx.strokeStyle = '#d4a017';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    // Vạch chia độ
+    for (let deg = 0; deg <= 180; deg++) {
+        const ang = -deg * Math.PI / 180;
+        const x1 = Math.cos(ang) * radius;
+        const y1 = Math.sin(ang) * radius;
+
+        let len = 5, width = 0.7, color = '#8a6d00';
+        if (deg % 10 === 0) { len = 14; width = 1.5; color = '#5a4400'; }
+        else if (deg % 5 === 0) { len = 9; width = 1; color = '#7a5f00'; }
+
+        const x2 = Math.cos(ang) * (radius - len);
+        const y2 = Math.sin(ang) * (radius - len);
+
+        ctx.beginPath();
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(x2, y2);
+        ctx.strokeStyle = color;
+        ctx.lineWidth = width;
+        ctx.stroke();
+    }
+
+    // Số độ thang ngoài (đỏ) - đặt gần vành hơn
+    ctx.font = 'bold 11px Arial';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    for (let deg = 0; deg <= 180; deg += 10) {
+        const ang = -deg * Math.PI / 180;
+        const rr = radius - 21;
+        ctx.fillStyle = '#c0392b';
+        ctx.fillText(deg, Math.cos(ang) * rr, Math.sin(ang) * rr);
+    }
+
+    // Số độ thang trong (xanh)
+    ctx.font = 'bold 9px Arial';
+    for (let deg = 0; deg <= 180; deg += 10) {
+        const ang = -deg * Math.PI / 180;
+        const rr = radius - 34;
+        ctx.fillStyle = '#2980b9';
+        ctx.fillText(180 - deg, Math.cos(ang) * rr, Math.sin(ang) * rr);
+    }
+
+    // Đường tâm thước (nét đứt)
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.lineTo(0, -radius);
+    ctx.strokeStyle = '#d4a017';
+    ctx.lineWidth = 1.5;
+    ctx.setLineDash([5, 4]);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // Tâm thước
+    ctx.beginPath();
+    ctx.arc(0, 0, 10, 0, Math.PI * 2);
+    ctx.fillStyle = '#ff9800';
+    ctx.fill();
+    ctx.strokeStyle = '#fff';
+    ctx.lineWidth = 2.5;
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.arc(0, 0, 3, 0, Math.PI * 2);
+    ctx.fillStyle = '#fff';
+    ctx.fill();
+
+    // ===== NÚT XOAY - ĐẶT NGOÀI THÂN THƯỚC =====
+    const knobY = -radius - ROTATE_KNOB_OFFSET;
+    // Vẽ thanh nối từ đỉnh thước đến nút xoay
+    ctx.beginPath();
+    ctx.moveTo(0, -radius);
+    ctx.lineTo(0, knobY);
+    ctx.strokeStyle = '#ff5722';
+    ctx.lineWidth = 3;
+    ctx.stroke();
+
+    // Nút xoay nhỏ gọn
+    ctx.beginPath();
+    ctx.arc(0, knobY, ROTATE_KNOB_RADIUS, 0, Math.PI * 2);
+    ctx.fillStyle = '#ff5722';
+    ctx.fill();
+    ctx.strokeStyle = '#fff';
+    ctx.lineWidth = 2.5;
+    ctx.stroke();
+
+    // Biểu tượng xoay nhỏ bên trong
+    ctx.strokeStyle = '#fff';
+    ctx.lineWidth = 1.8;
+    ctx.beginPath();
+    ctx.arc(0, knobY, 6, 0.3, Math.PI * 1.4);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(0, knobY - 7);
+    ctx.lineTo(-3, knobY - 4);
+    ctx.lineTo(3, knobY - 4);
+    ctx.closePath();
+    ctx.fillStyle = '#fff';
+    ctx.fill();
+
+    ctx.restore();
+}
+
+// ===== TƯƠNG TÁC =====
+function getPos(e) {
+    const rect = canvas.getBoundingClientRect();
+    const sx = canvas.width / rect.width;
+    const sy = canvas.height / rect.height;
+    let cx, cy;
+    if (e.touches) {
+        cx = e.touches[0].clientX;
+        cy = e.touches[0].clientY;
+    } else {
+        cx = e.clientX;
+        cy = e.clientY;
+    }
+    return { x: (cx - rect.left) * sx, y: (cy - rect.top) * sy };
+}
+
+function findTarget(pos) {
+    if (!protractor.visible) return null;
+
+    const { cx, cy, angle, radius } = protractor;
+    const rad = angle * Math.PI / 180;
+    const dx = pos.x - cx;
+    const dy = pos.y - cy;
+    const lx = dx * Math.cos(-rad) - dy * Math.sin(-rad);
+    const ly = dx * Math.sin(-rad) + dy * Math.cos(-rad);
+
+    // Nút xoay ở vị trí (0, -radius - ROTATE_KNOB_OFFSET)
+    const knobY = -radius - ROTATE_KNOB_OFFSET;
+    if (Math.hypot(lx, ly - knobY) < ROTATE_KNOB_RADIUS + 8) {
+        return { type: 'rotate' };
+    }
+
+    // Tâm thước
+    if (Math.hypot(lx, ly) < 16) return { type: 'move' };
+
+    // Thân thước (bán nguyệt)
+    if (ly <= 0 && Math.hypot(lx, ly) <= radius + 10) return { type: 'move' };
+
+    return null;
+}
+
+canvas.addEventListener('mousedown', onDown);
+canvas.addEventListener('mousemove', onMove);
+canvas.addEventListener('mouseup', onUp);
+canvas.addEventListener('mouseleave', onUp);
+
+canvas.addEventListener('touchstart', (e) => { e.preventDefault(); onDown(e); }, { passive: false });
+canvas.addEventListener('touchmove', (e) => { e.preventDefault(); onMove(e); }, { passive: false });
+canvas.addEventListener('touchend', (e) => { e.preventDefault(); onUp(e); }, { passive: false });
+
+function onDown(e) {
+    const pos = getPos(e);
+    const target = findTarget(pos);
+    if (!target) return;
+
+    if (target.type === 'move') {
+        dragging = 'move';
+        dragOffset.x = pos.x - protractor.cx;
+        dragOffset.y = pos.y - protractor.cy;
+        canvas.style.cursor = 'grabbing';
+    } else if (target.type === 'rotate') {
+        dragging = 'rotate';
+        canvas.style.cursor = 'grabbing';
+    }
+    draw();
+}
+
+function onMove(e) {
+    const pos = getPos(e);
+
+    if (dragging) {
+        if (dragging === 'move') {
+            protractor.cx = pos.x - dragOffset.x;
+            protractor.cy = pos.y - dragOffset.y;
+        } else if (dragging === 'rotate') {
+            // Khi kéo nút xoay, tính góc từ tâm thước đến con trỏ
+            // Vì nút xoay nằm ở phía "trên" thước (góc -90° trong hệ thước)
+            const dx = pos.x - protractor.cx;
+            const dy = pos.y - protractor.cy;
+            // Góc của vector (tâm → chuột) so với trục Ox (ngược chiều y)
+            const pointerAngle = Math.atan2(dy, dx) * 180 / Math.PI;
+            // Nút xoay nằm ở "phía trên" (góc -90° so với trục ngang của thước)
+            // Vậy góc xoay thước = pointerAngle + 90°
+            protractor.angle = pointerAngle + 90;
+        }
+        draw();
+    } else {
+        const target = findTarget(pos);
+        const newHover = target ? target.type : null;
+        if (newHover !== hoverTarget) {
+            hoverTarget = newHover;
+            canvas.style.cursor = (hoverTarget === 'move' || hoverTarget === 'rotate') ? 'grab' : 'default';
+        }
+    }
+}
+
+function onUp() {
+    dragging = null;
+    canvas.style.cursor = 'default';
+    draw();
+}
+
+function rotateProtractor(d) {
+    protractor.angle += d;
+    draw();
+}
+
+// ===== KIỂM TRA KẾT QUẢ =====
+function checkAnswer() {
+    const input = document.getElementById('answerInput');
+    const answer = parseFloat(input.value);
+    const resultBox = document.getElementById('resultBox');
+
+    if (isNaN(answer)) {
+        showResult('⚠️ Vui lòng nhập kết quả đo!', 'result-info');
+        return;
+    }
+
+    if (answer < 0 || answer > 180) {
+        showResult('⚠️ Số đo góc phải nằm trong khoảng 0° đến 180°!', 'result-info');
+        return;
+    }
+
+    attemptCount++;
+    document.getElementById('attemptCount').textContent = attemptCount;
+
+    const diff = Math.abs(answer - angleXOY);
+
+    if (diff <= 1) {
+        correctCount++;
+        document.getElementById('correctCount').textContent = correctCount;
+        document.getElementById('statusText').textContent = 'Đã đo đúng';
+        showResult('✅ Đo chính xác! Số đo đúng là ' + angleXOY + '°.', 'result-correct');
+        document.getElementById('submitBtn').disabled = false;
+    } else {
+        document.getElementById('statusText').textContent = 'Đo sai, thử lại';
+        showResult('❌ Chưa chính xác! Hãy đo lại cẩn thận hơn. (Gợi ý: kiểm tra tâm thước đã đặt đúng đỉnh O chưa, đường kính thước có trùng với tia Ox không)', 'result-wrong');
+    }
+}
+
+function showResult(msg, cls) {
+    const box = document.getElementById('resultBox');
+    box.textContent = msg;
+    box.className = 'result-box ' + cls;
+    box.style.display = 'block';
+}
+
+// ===== GỬI KẾT QUẢ =====
+async function submitResult() {
+    const name = document.getElementById('studentName').value.trim();
+    const cls = document.getElementById('studentClass').value.trim();
+
+    if (!name) {
+        showResult('⚠️ Vui lòng nhập họ và tên học sinh!', 'result-info');
+        document.getElementById('studentName').focus();
+        return;
+    }
+    if (!cls) {
+        showResult('⚠️ Vui lòng nhập lớp!', 'result-info');
+        document.getElementById('studentClass').focus();
+        return;
+    }
+
+    if (attemptCount === 0) {
+        showResult('⚠️ Bạn chưa thực hiện lần đo nào!', 'result-info');
+        return;
+    }
+
+    const submitBtn = document.getElementById('submitBtn');
+    submitBtn.disabled = true;
+    submitBtn.textContent = '⏳ Đang gửi...';
+
+    const payload = {
+        name: name,
+        className: cls,
+        attempts: attemptCount,
+        correct: correctCount,
+        angle: angleXOY
+    };
+
+    try {
+        await fetch(API_URL, {
+            method: 'POST',
+            mode: 'no-cors',
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            body: JSON.stringify(payload)
+        });
+
+        showResult('📤 Gửi kết quả thành công! Cảm ơn ' + name + ' (' + cls + '). Số lần đo: ' + attemptCount + '.', 'result-correct');
+        submitBtn.textContent = '✓ Đã gửi';
+        submitBtn.style.background = 'linear-gradient(135deg,#11998e,#38ef7d)';
+    } catch (err) {
+        console.error(err);
+        showResult('❌ Có lỗi khi gửi kết quả. Vui lòng thử lại!', 'result-wrong');
+        submitBtn.disabled = false;
+        submitBtn.textContent = '📤 Gửi kết quả';
+    }
+}
+
+// ===== KHỞI ĐỘNG =====
+newAngle();
+</script>
+</body>
+</html>
